@@ -17,8 +17,7 @@ import { PhysicsAggregate, PhysicsShapeType } from "@babylonjs/core/Physics"
 //spector start
 import "@babylonjs/core/Debug/debugLayer"; // Augments the scene with the debug methods
 import "@babylonjs/inspector"; // Injects a local ES6 version of the inspector to prevent
-import { TestShape } from "./entities/testshape";
-
+import { InputManager } from "./input/InputManager";
 
 export class Game implements IGame{
   readonly engine: Engine;
@@ -30,9 +29,7 @@ export class Game implements IGame{
   player?: IEntity;
 
   readonly ents = new Array<IEntity>()
-
-
-
+  inputManager: InputManager;
   public constructor(element:string){
 
     // Get the canvas element from the DOM.
@@ -69,12 +66,12 @@ export class Game implements IGame{
 
     const axes = new AxesViewer(this.scene, 10)
 
+    this.inputManager = new InputManager(this);
+
+
     HavokPhysics().then((havok) => {
       this.scene.enablePhysics(new Vector3(0,-9.81, 0), new HavokPlugin(true, havok));
       const groundAggrergate = new PhysicsAggregate(this.ground, PhysicsShapeType.BOX, { mass:0}, this.scene)
-
-      this.ents.push(new TestShape("test", this))
-
 
     });
 
