@@ -3,8 +3,64 @@
 import { GamepadManager, Xbox360Pad,Xbox360Button, DualShockPad, DualShockButton, GenericPad  } from "@babylonjs/core/Gamepads";
 
 import { Vector2 } from "@babylonjs/core/Maths/math";
-import { IGame, IInputManager } from "../interfaces";
-import { InputCommand } from "./InputCommand";
+import { CommandAction, ICommandSepc, IGame, IInputCommand, IInputManager } from "../interfaces";
+
+
+class InputCommand implements IInputCommand{
+  readonly name:string
+  readonly action:string
+  readonly defaultControls:string[]
+
+  constructor(spec:ICommandSepc){
+    this.name = spec.name
+    this.action = spec.action
+    this.defaultControls = spec.defaultControls
+  }
+
+  private actions = new Array<CommandAction>();
+  private active:boolean = false
+  //default key code of command
+  get DefaultControls():string[]{
+    return this.defaultControls
+  }
+  //unique name of command
+  get Name():string{
+    return this.name
+  }
+  //short non-unique name
+  get Action():string{
+    return this.action
+  }
+  //is active
+  get IsActive():boolean{
+    return this.active
+  }
+
+  public Subscribe(act:CommandAction){
+    if (this.actions.indexOf(act) == -1){
+      this.actions.push(act)
+    }
+  }
+
+  public Unsubscribe(act:CommandAction){
+    let index = this.actions.indexOf(act)
+    if (index > -1){
+      this.actions.splice(index, 1)
+    }
+  }
+
+  public Start(){
+    if (!this.active){
+      this.actions.forEach((act)=>act(true, this.action))
+      this.active = true
+    }
+  }
+
+  public Stop(){
+    this.active = false
+    this.actions.forEach((act)=>act(false, this.action))
+  }
+}
 
 
 export class InputManager implements IInputManager {
@@ -107,17 +163,19 @@ export class InputManager implements IInputManager {
     }
   }
 
-  RegisterCommands(commands: InputCommand[]):void{
-    commands.forEach(c=>this.RegisterCommand(c));
+  RegisterCommands(commands: ICommandSepc[]):IInputCommand[]{
+    return commands.map(c=>this.RegisterCommand(c));
   }
 
-  RegisterCommand(command: InputCommand):void{
-    if (!this.commandMap.has(command.Name)){
-      this.commandMap.set(command.Name, command)
-      command.DefaultControls.forEach(code=>{ this.bind(code, command.name)})
+  RegisterCommand(spec: ICommandSepc):IInputCommand{
+    if (!this.commandMap.has(spec.name)){
+      const command = new InputCommand(spec)
+      this.commandMap.set(command.name, command)
+      command.defaultControls.forEach(code=>{ this.bind(code, command.name)})
+      return command
     }
     else{
-      throw new Error("Duplicate command registered: " + command.Name)
+      throw new Error("Duplicate command registered: " + spec.name)
     }
   }
 

@@ -18,3 +18,25 @@ export interface IInputManager{
   joy2:Vector2
 }
 
+
+export type CommandAction  = (active:boolean,name:string)=>void;
+
+export interface ICommandSepc{
+  name:string
+  action:string
+  defaultControls:Array<string>
+}
+
+export interface IInputCommand{
+  DefaultControls:string[]
+  //unique name of command
+  Name:string
+  //short non-unique name
+  Action:string
+  //is active
+  IsActive:boolean
+
+  Subscribe(act:CommandAction):void
+  Unsubscribe(act:CommandAction):void
+
+}
