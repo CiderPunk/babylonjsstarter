@@ -79,63 +79,63 @@ export class InputManager implements IInputManager {
   public toggleDebug?:()=>void
   public togggleCamera?: () => void;
   public nextLevel?: () => void;
-  public constructor(owner: IGame) {
+  public constructor(readonly owner: IGame) {
     
   //joypad
   const gpm = new GamepadManager();
   gpm.onGamepadConnectedObservable.add((gamepad, state) => {
    console.log(`gamepad connected ${gamepad.id}`)
 
-    //Stick events
-    gamepad.onleftstickchanged((values)=>{
-      //console.log(`Left gamepad x:${values.x} y:${values.y}`)
-      this.joy1.set(-values.x, -values.y)
-      if (this.joy1.lengthSquared() > 1){
-        this.joy1.normalize()
-      }
-    })
-
-    gamepad.onrightstickchanged((values)=>{
-      //console.log(`Left gamepad x:${values.x} y:${values.y}`)
-      this.joy2.set(-values.x, -values.y)
-      if (this.joy2.lengthSquared() > 1){
-        this.joy2.normalize()
-      }
-    })
-
-    //Handle gamepad types
-    if (gamepad instanceof Xbox360Pad) {
-      //Xbox button down/up events
-      gamepad.onButtonDownObservable.add((button, state)=>{
-        this.keyDown("XB-" + Xbox360Button[button])
-      })
-      gamepad.onButtonUpObservable.add((button, state)=>{
-        this.keyUp("XB-" + Xbox360Button[button])
-      })
-    } 
-    else if (gamepad instanceof DualShockPad) {
-     //Dual shock button down/up events
-      gamepad.onButtonDownObservable.add((button, state)=>{
-        this.keyDown("DS-" + DualShockButton[button])
-      })
-      gamepad.onButtonUpObservable.add((button, state)=>{
-        this.keyUp("DS-" + DualShockButton[button])
-      })
+  //Stick events
+  gamepad.onleftstickchanged((values)=>{
+    //console.log(`Left gamepad x:${values.x} y:${values.y}`)
+    this.joy1.set(-values.x, -values.y)
+    if (this.joy1.lengthSquared() > 1){
+      this.joy1.normalize()
     }
-    else if (gamepad instanceof GenericPad) {
-      gamepad.onButtonDownObservable.add((button, state)=>{
-        this.keyDown("GN-" + button)
-      })
-     gamepad.onButtonUpObservable.add((button, state)=>{
-        this.keyUp("GN-" + button)
-     })
-   } 
+  })
+
+  gamepad.onrightstickchanged((values)=>{
+    //console.log(`Left gamepad x:${values.x} y:${values.y}`)
+    this.joy2.set(-values.x, -values.y)
+    if (this.joy2.lengthSquared() > 1){
+      this.joy2.normalize()
+    }
+  })
+
+  //Handle gamepad types
+  if (gamepad instanceof Xbox360Pad) {
+    //Xbox button down/up events
+    gamepad.onButtonDownObservable.add((button, state)=>{
+      this.keyDown("XB-" + Xbox360Button[button])
+    })
+    gamepad.onButtonUpObservable.add((button, state)=>{
+      this.keyUp("XB-" + Xbox360Button[button])
+    })
+  } 
+  else if (gamepad instanceof DualShockPad) {
+    //Dual shock button down/up events
+    gamepad.onButtonDownObservable.add((button, state)=>{
+      this.keyDown("DS-" + DualShockButton[button])
+    })
+    gamepad.onButtonUpObservable.add((button, state)=>{
+      this.keyUp("DS-" + DualShockButton[button])
+    })
+  }
+  else if (gamepad instanceof GenericPad) {
+    gamepad.onButtonDownObservable.add((button, state)=>{
+      this.keyDown("GP-" + button)
+    })
+    gamepad.onButtonUpObservable.add((button, state)=>{
+      this.keyUp("GP-" + button)
+    })
+  } 
 
  })
 
- gpm.onGamepadDisconnectedObservable.add((gp, state)=>{
-   console.log(`gamepad disconnected ${gp.id}`)
- })
+    gpm.onGamepadDisconnectedObservable.add((gp, state)=>{
+      console.log(`gamepad disconnected ${gp.id}`)
+    })
 
     if (document){
       document.addEventListener("keydown", (e:KeyboardEvent) =>{  
@@ -163,11 +163,15 @@ export class InputManager implements IInputManager {
     }
   }
 
-  RegisterCommands(commands: ICommandSepc[]):IInputCommand[]{
-    return commands.map(c=>this.RegisterCommand(c));
+
+  getCommand = (name:string) => this.commandMap.get(name) 
+  
+
+  registerCommands(commandSpecs: ICommandSepc[]):IInputCommand[]{
+    return commandSpecs.map(c=>this.registerCommand(c));
   }
 
-  RegisterCommand(spec: ICommandSepc):IInputCommand{
+  registerCommand(spec: ICommandSepc):IInputCommand{
     if (!this.commandMap.has(spec.name)){
       const command = new InputCommand(spec)
       this.commandMap.set(command.name, command)
