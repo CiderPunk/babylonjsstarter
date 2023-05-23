@@ -68,7 +68,6 @@ export class Game implements IGame{
 
     this.inputManager = new InputManager(this);
 
-
     HavokPhysics().then((havok) => {
       this.scene.enablePhysics(new Vector3(0,-9.81, 0), new HavokPlugin(true, havok));
       const groundAggrergate = new PhysicsAggregate(this.ground, PhysicsShapeType.BOX, { mass:0}, this.scene)

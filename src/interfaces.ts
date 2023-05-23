@@ -12,14 +12,37 @@ export interface IEntity{
 }
 
 export interface IInputManager{
-  fire:boolean
-  jump:boolean
-  joy1:Vector2
-  joy2:Vector2
+  bind(keyCode:string, commandName:string):void
+  getCommand(name:string):IInputCommand
+  registerCommands(commandSpecs: ICommandSepc[]):IInputCommand[]
+  registerCommand(spec: ICommandSepc):IInputCommand
 }
 
+export type CommandAction  = (active:boolean,action:string)=>void;
+export type AxisAction  = (val:number,action:string)=>void;
 
-export type CommandAction  = (active:boolean,name:string)=>void;
+export interface IJoystickSpec{
+  name:string
+  action:string
+  vertical:IAxisSpec
+  horizontal:IAxisSpec
+}
+
+export interface IAxisSpec{
+  name:string
+  action:string
+  controlAxis:Array<string>
+  positiveControls:Array<string>
+  negativeControls:Array<string>
+}
+
+export interface IInputAxis{
+  name:string
+  action:string
+  controlAxis:Array<string>
+  positiveControls:Array<string>
+  negativeControls:Array<string>
+}
 
 export interface ICommandSepc{
   name:string
@@ -28,15 +51,12 @@ export interface ICommandSepc{
 }
 
 export interface IInputCommand{
-  DefaultControls:string[]
+  getDefaultControls():Readonly<Array<string>>
   //unique name of command
-  Name:string
-  //short non-unique name
-  Action:string
+  name:string
   //is active
-  IsActive:boolean
+  isActive:boolean
 
   Subscribe(act:CommandAction):void
   Unsubscribe(act:CommandAction):void
-
 }

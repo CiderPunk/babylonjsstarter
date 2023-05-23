@@ -3,36 +3,52 @@
 import { GamepadManager, Xbox360Pad,Xbox360Button, DualShockPad, DualShockButton, GenericPad  } from "@babylonjs/core/Gamepads";
 
 import { Vector2 } from "@babylonjs/core/Maths/math";
-import { CommandAction, ICommandSepc, IGame, IInputCommand, IInputManager } from "../interfaces";
+import { CommandAction, ICommandSepc, IGame, IInputAxis, IInputCommand, IInputManager } from "../interfaces";
 
+
+class InputAxis implements IInputAxis{
+  readonly name: string;
+  readonly action: string;
+  readonly defaultControlAxis: string[];
+  defaultPositiveControls: string[];
+  defaultNegativeControls: string[];
+
+
+
+  constructor(readonly spec:IInputAxis, inputManager:IInputManager){
+
+    this.controlAxis = spec.controlAxis
+  }
+
+
+  
+
+
+}
 
 class InputCommand implements IInputCommand{
-  readonly name:string
-  readonly action:string
-  readonly defaultControls:string[]
 
-  constructor(spec:ICommandSepc){
-    this.name = spec.name
-    this.action = spec.action
-    this.defaultControls = spec.defaultControls
+  constructor(readonly spec:ICommandSepc){
   }
+
+  get name():string{
+    return this.spec.name
+  }
+
+  get action():string{
+    return this.spec.action
+  }
+
 
   private actions = new Array<CommandAction>();
   private active:boolean = false
   //default key code of command
-  get DefaultControls():string[]{
-    return this.defaultControls
+  getDefaultControls():Readonly<Array<string>>{
+    return this.spec.defaultControls
   }
-  //unique name of command
-  get Name():string{
-    return this.name
-  }
-  //short non-unique name
-  get Action():string{
-    return this.action
-  }
+
   //is active
-  get IsActive():boolean{
+  get isActive():boolean{
     return this.active
   }
 
@@ -64,16 +80,8 @@ class InputCommand implements IInputCommand{
 
 
 export class InputManager implements IInputManager {
-
   readonly commandMap = new Map<string,InputCommand>()
   readonly keyMap = new Map<string, InputCommand[]>()
-
-  //gpm: GamepadManager
-  joy1 = new  Vector2(0,0)
-  joy2 = new  Vector2(0,0)
-  keyMove = new  Vector2(0,0)
-  fire:boolean = false
-  jump:boolean = false
   downKeys = new Set<string>()
 
   public toggleDebug?:()=>void
@@ -88,8 +96,10 @@ export class InputManager implements IInputManager {
 
   //Stick events
   gamepad.onleftstickchanged((values)=>{
+
+
     //console.log(`Left gamepad x:${values.x} y:${values.y}`)
-    this.joy1.set(-values.x, -values.y)
+    this.joy1.set(values.x, values.y)
     if (this.joy1.lengthSquared() > 1){
       this.joy1.normalize()
     }
@@ -97,7 +107,7 @@ export class InputManager implements IInputManager {
 
   gamepad.onrightstickchanged((values)=>{
     //console.log(`Left gamepad x:${values.x} y:${values.y}`)
-    this.joy2.set(-values.x, -values.y)
+    this.joy2.set(values.x, values.y)
     if (this.joy2.lengthSquared() > 1){
       this.joy2.normalize()
     }
@@ -164,7 +174,7 @@ export class InputManager implements IInputManager {
   }
 
 
-  getCommand = (name:string) => this.commandMap.get(name) 
+  getCommand = (name:string) => this.commandMap.get(name) as IInputCommand
   
 
   registerCommands(commandSpecs: ICommandSepc[]):IInputCommand[]{
