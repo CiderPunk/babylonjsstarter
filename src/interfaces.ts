@@ -28,29 +28,26 @@ export interface IJoystickSpec{
   horizontal:IAxisSpec
 }
 
-export interface IAxisSpec{
-  name:string
-  action:string
-  controlAxis:Array<string>
-  positiveControls:Array<string>
-  negativeControls:Array<string>
+export interface IAxisSpec extends IInputBase{
+  defaultPositiveControls:Array<string>
+  defaultNegativeControls:Array<string>
 }
 
-export interface IInputAxis{
+export interface IInputBase{
   name:string
   action:string
-  controlAxis:Array<string>
-  positiveControls:Array<string>
-  negativeControls:Array<string>
 }
 
-export interface ICommandSepc{
-  name:string
-  action:string
+
+export interface IInputAxis extends IAxisSpec{
+  value:number
+}
+
+export interface ICommandSepc extends IInputBase{
   defaultControls:Array<string>
 }
 
-export interface IInputCommand{
+export interface IInputCommand extends IInputBase{
   getDefaultControls():Readonly<Array<string>>
   //unique name of command
   name:string

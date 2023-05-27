@@ -1,29 +1,38 @@
 
 //import "@babylonjs/core/Gamepads/gamepadSceneComponent";
 import { GamepadManager, Xbox360Pad,Xbox360Button, DualShockPad, DualShockButton, GenericPad  } from "@babylonjs/core/Gamepads";
-
-import { Vector2 } from "@babylonjs/core/Maths/math";
-import { CommandAction, ICommandSepc, IGame, IInputAxis, IInputCommand, IInputManager } from "../interfaces";
+import { CommandAction, IAxisSpec, ICommandSepc, IGame, IInputAxis, IInputBase, IInputCommand, IInputManager } from "../interfaces";
 
 
-class InputAxis implements IInputAxis{
-  readonly name: string;
-  readonly action: string;
-  readonly defaultControlAxis: string[];
-  defaultPositiveControls: string[];
-  defaultNegativeControls: string[];
-
-
-
-  constructor(readonly spec:IInputAxis, inputManager:IInputManager){
-
-    this.controlAxis = spec.controlAxis
+abstract class InputBase implements IInputBase{
+  constructor(readonly spec:IInputBase){
   }
 
+  get name():string{
+    return this.spec.name
+  }
 
-  
+  get action():string{
+    return this.spec.action
+  }
+} 
 
 
+class InputAxis extends InputBase implements IInputAxis{
+  constructor(readonly spec:IAxisSpec){
+    super(spec)
+  }
+
+  get value():number{
+    return 0
+  }
+
+  get defaultPositiveControls():string[]{
+    return this.spec.defaultPositiveControls
+  }
+  get defaultNegativeControls():string[]{
+    return this.spec.defaultNegativeControls
+  }
 }
 
 class InputCommand implements IInputCommand{
@@ -98,19 +107,15 @@ export class InputManager implements IInputManager {
   gamepad.onleftstickchanged((values)=>{
 
 
-    //console.log(`Left gamepad x:${values.x} y:${values.y}`)
-    this.joy1.set(values.x, values.y)
-    if (this.joy1.lengthSquared() > 1){
-      this.joy1.normalize()
-    }
+
   })
 
   gamepad.onrightstickchanged((values)=>{
     //console.log(`Left gamepad x:${values.x} y:${values.y}`)
-    this.joy2.set(values.x, values.y)
-    if (this.joy2.lengthSquared() > 1){
-      this.joy2.normalize()
-    }
+    //this.joy2.set(values.x, values.y)
+    //if (this.joy2.lengthSquared() > 1){
+    //  this.joy2.normalize()
+    //}
   })
 
   //Handle gamepad types
@@ -163,16 +168,30 @@ export class InputManager implements IInputManager {
     }
   }
 
-  bind(keyCode:string, commandName:string):void{
+  bind(key:string, commandName:string):void{
     let command = this.commandMap.get(commandName) as InputCommand
     if (command){
-      if (!this.keyMap.has(keyCode)){
-        this.keyMap.set(keyCode, [])
+      if (!this.keyMap.has(key)){
+        this.keyMap.set(key, [])
       }
-      this.keyMap.get(keyCode)?.push(command)
+      this.keyMap.get(key)?.push(command)
+
+      this.addSavedKey(command.name, key)
+
     }
   }
 
+  getSavedKeys(name:string):string[]{
+    return localStorage.getItem(`input.${name}`)?.split(',') ?? []
+  }
+
+  addSavedKey(name: string, key: string) {
+    const keys = this.getSavedKeys(name)
+    if (keys.findIndex(k=>key == k) === -1){
+      keys.push(key)
+      localStorage.setItem(`input.${name}`, keys.join(","))
+    }
+  }
 
   getCommand = (name:string) => this.commandMap.get(name) as IInputCommand
   
@@ -181,11 +200,15 @@ export class InputManager implements IInputManager {
     return commandSpecs.map(c=>this.registerCommand(c));
   }
 
+
   registerCommand(spec: ICommandSepc):IInputCommand{
     if (!this.commandMap.has(spec.name)){
       const command = new InputCommand(spec)
       this.commandMap.set(command.name, command)
-      command.defaultControls.forEach(code=>{ this.bind(code, command.name)})
+      
+      this.getSavedKeys(command.name)
+
+      command.getDefaultControls().forEach(code=>{ this.bind(code, command.name)})
       return command
     }
     else{
