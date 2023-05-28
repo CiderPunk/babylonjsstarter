@@ -20,27 +20,29 @@ export interface IInputManager{
 
 export type CommandAction  = (active:boolean,action:string)=>void;
 export type AxisAction  = (val:number,action:string)=>void;
-
+/*
 export interface IJoystickSpec{
   name:string
   action:string
-  vertical:IAxisSpec
+  vertical:
   horizontal:IAxisSpec
 }
-
-export interface IAxisSpec extends IInputBase{
-  defaultPositiveControls:Array<string>
-  defaultNegativeControls:Array<string>
-}
+*/
 
 export interface IInputBase{
   name:string
   action:string
 }
 
-
-export interface IInputAxis extends IAxisSpec{
+export interface IAxisBase extends IInputBase{
   value:number
+  single:boolean
+}
+
+export interface ICommandAxisSpec extends IInputBase{
+  single:boolean
+  defaultPositiveControls:Array<string>
+  defaultNegativeControls:Array<string>
 }
 
 export interface ICommandSepc extends IInputBase{

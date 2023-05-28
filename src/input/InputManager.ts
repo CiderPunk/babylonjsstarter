@@ -1,7 +1,7 @@
 
 //import "@babylonjs/core/Gamepads/gamepadSceneComponent";
 import { GamepadManager, Xbox360Pad,Xbox360Button, DualShockPad, DualShockButton, GenericPad  } from "@babylonjs/core/Gamepads";
-import { CommandAction, IAxisSpec, ICommandSepc, IGame, IInputAxis, IInputBase, IInputCommand, IInputManager } from "../interfaces";
+import { CommandAction, IAxisBase, ICommandAxisSpec, ICommandSepc, IGame,  IInputBase, IInputCommand, IInputManager } from "../interfaces";
 
 
 abstract class InputBase implements IInputBase{
@@ -17,14 +17,25 @@ abstract class InputBase implements IInputBase{
   }
 } 
 
-
-class InputAxis extends InputBase implements IInputAxis{
-  constructor(readonly spec:IAxisSpec){
-    super(spec)
+/**
+ * InputAxis 
+ * 
+ */
+class InputAxis extends InputBase implements IAxisBase{
+  constructor(){
   }
 
+}
+
+class InputCommandAxis extends InputBase implements IAxisBase{
+  constructor(readonly spec:ICommandAxisSpec){
+    super(spec)
+  }
   get value():number{
     return 0
+  }
+  get single():boolean{
+    return this.spec.single
   }
 
   get defaultPositiveControls():string[]{
@@ -89,6 +100,7 @@ class InputCommand implements IInputCommand{
 
 
 export class InputManager implements IInputManager {
+
   readonly commandMap = new Map<string,InputCommand>()
   readonly keyMap = new Map<string, InputCommand[]>()
   downKeys = new Set<string>()
@@ -96,57 +108,53 @@ export class InputManager implements IInputManager {
   public toggleDebug?:()=>void
   public togggleCamera?: () => void;
   public nextLevel?: () => void;
+
+
   public constructor(readonly owner: IGame) {
-    
-  //joypad
-  const gpm = new GamepadManager();
-  gpm.onGamepadConnectedObservable.add((gamepad, state) => {
-   console.log(`gamepad connected ${gamepad.id}`)
+    //joypad
+    const gpm = new GamepadManager();
+    gpm.onGamepadConnectedObservable.add((gamepad, state) => {
+      console.log(`gamepad connected ${gamepad.id}`)
+      //Stick events
+      gamepad.onleftstickchanged((values)=>{
+      })
+      gamepad.onrightstickchanged((values)=>{
+        //console.log(`Left gamepad x:${values.x} y:${values.y}`)
+        //this.joy2.set(values.x, values.y)
+        //if (this.joy2.lengthSquared() > 1){
+        //  this.joy2.normalize()
+        //}
+      })
 
-  //Stick events
-  gamepad.onleftstickchanged((values)=>{
+      //Handle gamepad types
+      if (gamepad instanceof Xbox360Pad) {
+        //Xbox button down/up events
+        gamepad.onButtonDownObservable.add((button, state)=>{
+          this.keyDown("XB-" + Xbox360Button[button])
+        })
+        gamepad.onButtonUpObservable.add((button, state)=>{
+          this.keyUp("XB-" + Xbox360Button[button])
+        })
+      } 
+      else if (gamepad instanceof DualShockPad) {
+        //Dual shock button down/up events
+        gamepad.onButtonDownObservable.add((button, state)=>{
+          this.keyDown("DS-" + DualShockButton[button])
+        })
+        gamepad.onButtonUpObservable.add((button, state)=>{
+          this.keyUp("DS-" + DualShockButton[button])
+        })
+      }
+      else if (gamepad instanceof GenericPad) {
+        gamepad.onButtonDownObservable.add((button, state)=>{
+          this.keyDown("GP-" + button)
+        })
+        gamepad.onButtonUpObservable.add((button, state)=>{
+          this.keyUp("GP-" + button)
+        })
+      } 
 
-
-
-  })
-
-  gamepad.onrightstickchanged((values)=>{
-    //console.log(`Left gamepad x:${values.x} y:${values.y}`)
-    //this.joy2.set(values.x, values.y)
-    //if (this.joy2.lengthSquared() > 1){
-    //  this.joy2.normalize()
-    //}
-  })
-
-  //Handle gamepad types
-  if (gamepad instanceof Xbox360Pad) {
-    //Xbox button down/up events
-    gamepad.onButtonDownObservable.add((button, state)=>{
-      this.keyDown("XB-" + Xbox360Button[button])
     })
-    gamepad.onButtonUpObservable.add((button, state)=>{
-      this.keyUp("XB-" + Xbox360Button[button])
-    })
-  } 
-  else if (gamepad instanceof DualShockPad) {
-    //Dual shock button down/up events
-    gamepad.onButtonDownObservable.add((button, state)=>{
-      this.keyDown("DS-" + DualShockButton[button])
-    })
-    gamepad.onButtonUpObservable.add((button, state)=>{
-      this.keyUp("DS-" + DualShockButton[button])
-    })
-  }
-  else if (gamepad instanceof GenericPad) {
-    gamepad.onButtonDownObservable.add((button, state)=>{
-      this.keyDown("GP-" + button)
-    })
-    gamepad.onButtonUpObservable.add((button, state)=>{
-      this.keyUp("GP-" + button)
-    })
-  } 
-
- })
 
     gpm.onGamepadDisconnectedObservable.add((gp, state)=>{
       console.log(`gamepad disconnected ${gp.id}`)
@@ -175,9 +183,7 @@ export class InputManager implements IInputManager {
         this.keyMap.set(key, [])
       }
       this.keyMap.get(key)?.push(command)
-
-      this.addSavedKey(command.name, key)
-
+      this.saveKey(command.name, key)
     }
   }
 
@@ -185,21 +191,27 @@ export class InputManager implements IInputManager {
     return localStorage.getItem(`input.${name}`)?.split(',') ?? []
   }
 
-  addSavedKey(name: string, key: string) {
-    const keys = this.getSavedKeys(name)
+  saveKey(name: string, key: string) {
+    const keys = this.getSavedKeys(name) ?? new Array<string>()
     if (keys.findIndex(k=>key == k) === -1){
       keys.push(key)
       localStorage.setItem(`input.${name}`, keys.join(","))
     }
   }
 
+  removeKey(name: string, key: string) {
+    let keys = this.getSavedKeys(name)
+    if (keys){
+      keys = keys.filter((v=>v!=key))
+      localStorage.setItem(`input.${name}`, keys.join(","))
+    }
+  }
+
   getCommand = (name:string) => this.commandMap.get(name) as IInputCommand
   
-
   registerCommands(commandSpecs: ICommandSepc[]):IInputCommand[]{
     return commandSpecs.map(c=>this.registerCommand(c));
   }
-
 
   registerCommand(spec: ICommandSepc):IInputCommand{
     if (!this.commandMap.has(spec.name)){
@@ -234,9 +246,4 @@ export class InputManager implements IInputManager {
     console.log(`keyup ${code}`)
   }
 
-  updateMove():void {
- //   this.move.copyFrom(this.keyMove)
-  //  this.move.normalize()
-    //console.log(`keys ${this.keyMove.x}, ${this.keyMove.y}  move ${this.move.x}, ${this.move.y}`)
-  }
 }
