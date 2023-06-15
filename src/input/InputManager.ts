@@ -21,9 +21,18 @@ abstract class InputBase implements IInputBase{
  * InputAxis 
  * 
  */
-class InputAxis extends InputBase implements IAxisBase{
-  constructor(){
+class HardwareAxis  implements IAxisBase{
+  update(v: number) {
+    this.value = v
   }
+  readonly action:string
+  
+  constructor(readonly name:string,readonly single:boolean ){
+    this.action = name
+  }
+
+  value: number = 0;
+
 
 }
 
@@ -38,12 +47,6 @@ class InputCommandAxis extends InputBase implements IAxisBase{
     return this.spec.single
   }
 
-  get defaultPositiveControls():string[]{
-    return this.spec.defaultPositiveControls
-  }
-  get defaultNegativeControls():string[]{
-    return this.spec.defaultNegativeControls
-  }
 }
 
 class InputCommand implements IInputCommand{
@@ -101,6 +104,8 @@ class InputCommand implements IInputCommand{
 
 export class InputManager implements IInputManager {
 
+
+  readonly axisMap = new Map<string, IAxisBase>()
   readonly commandMap = new Map<string,InputCommand>()
   readonly keyMap = new Map<string, InputCommand[]>()
   downKeys = new Set<string>()
@@ -114,9 +119,20 @@ export class InputManager implements IInputManager {
     //joypad
     const gpm = new GamepadManager();
     gpm.onGamepadConnectedObservable.add((gamepad, state) => {
+      const id = gamepad.index;
+      const leftVert = new HardwareAxis(`${id}_left_vert`, false)
+      const leftHoriz = new HardwareAxis(`${id}_left_horiz`, false)
+      const rightVert = new HardwareAxis(`${id}_right_vert`, false)
+      const rightHoriz = new HardwareAxis(`${id}_right_horiz`, false)
+      this.registerAxis([leftVert,leftHoriz, rightVert, rightHoriz])
+
       console.log(`gamepad connected ${gamepad.id}`)
+
+
       //Stick events
       gamepad.onleftstickchanged((values)=>{
+          leftHoriz.update(values.x)
+          leftVert.update(values.y)
       })
       gamepad.onrightstickchanged((values)=>{
         //console.log(`Left gamepad x:${values.x} y:${values.y}`)
@@ -135,6 +151,9 @@ export class InputManager implements IInputManager {
         gamepad.onButtonUpObservable.add((button, state)=>{
           this.keyUp("XB-" + Xbox360Button[button])
         })
+
+
+        gamepad.rightTrigger
       } 
       else if (gamepad instanceof DualShockPad) {
         //Dual shock button down/up events
@@ -174,6 +193,9 @@ export class InputManager implements IInputManager {
         this.keyUp(e.key)
       })
     }
+  }
+  registerAxis(axis:Array<IAxisBase>) {
+    axis.forEach(a=>{this.axisMap.set(a.name, a)})
   }
 
   bind(key:string, commandName:string):void{

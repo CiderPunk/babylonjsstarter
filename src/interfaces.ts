@@ -42,7 +42,7 @@ export interface IAxisBase extends IInputBase{
 export interface ICommandAxisSpec extends IInputBase{
   single:boolean
   defaultPositiveControls:Array<string>
-  defaultNegativeControls:Array<string>
+  defaultNegativeControls?:Array<string>
 }
 
 export interface ICommandSepc extends IInputBase{
