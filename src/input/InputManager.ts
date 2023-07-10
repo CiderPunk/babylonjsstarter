@@ -104,75 +104,73 @@ class InputCommand implements IInputCommand{
 
 export class InputManager implements IInputManager {
 
-
   readonly axisMap = new Map<string, IAxisBase>()
   readonly commandMap = new Map<string,InputCommand>()
   readonly keyMap = new Map<string, InputCommand[]>()
   downKeys = new Set<string>()
-
-  public toggleDebug?:()=>void
-  public togggleCamera?: () => void;
-  public nextLevel?: () => void;
-
 
   public constructor(readonly owner: IGame) {
     //joypad
     const gpm = new GamepadManager();
     gpm.onGamepadConnectedObservable.add((gamepad, state) => {
       const id = gamepad.index;
-      const leftVert = new HardwareAxis(`${id}_left_vert`, false)
-      const leftHoriz = new HardwareAxis(`${id}_left_horiz`, false)
-      const rightVert = new HardwareAxis(`${id}_right_vert`, false)
-      const rightHoriz = new HardwareAxis(`${id}_right_horiz`, false)
-      this.registerAxis([leftVert,leftHoriz, rightVert, rightHoriz])
+       
+      console.log(`gamepad connected ${id}`)
 
-      console.log(`gamepad connected ${gamepad.id}`)
-
+      const [leftVert, leftHoriz, rightVert,rightHoriz] = this.registerHardwareAxis([
+        new HardwareAxis(`${id}_left_vert`, false),
+        new HardwareAxis(`${id}_left_horiz`, false), 
+        new HardwareAxis(`${id}_right_vert`, false), 
+        new HardwareAxis(`${id}_right_horiz`, false)])
 
       //Stick events
       gamepad.onleftstickchanged((values)=>{
-          leftHoriz.update(values.x)
-          leftVert.update(values.y)
+        leftHoriz.update(values.x)
+        leftVert.update(values.y)
       })
+      
       gamepad.onrightstickchanged((values)=>{
-        //console.log(`Left gamepad x:${values.x} y:${values.y}`)
-        //this.joy2.set(values.x, values.y)
-        //if (this.joy2.lengthSquared() > 1){
-        //  this.joy2.normalize()
-        //}
+        rightHoriz.update(values.x)
+        rightVert.update(values.y)
       })
 
       //Handle gamepad types
-      if (gamepad instanceof Xbox360Pad) {
+      if (gamepad instanceof Xbox360Pad || gamepad instanceof DualShockPad ) {
+        const [leftTrigger, rightTrigger] =  this.registerHardwareAxis([
+          new HardwareAxis(`${id}_trigger_left`, true),
+          new HardwareAxis(`${id}_trigger_right`, true)])
+
+        gamepad.onlefttriggerchanged((value:number)=>{ leftTrigger.update(value) });
+        gamepad.onrighttriggerchanged((value:number)=>{ rightTrigger.update(value) });
+      }
+
+      //Handle gamepad types
+      if (gamepad instanceof Xbox360Pad ) {
         //Xbox button down/up events
         gamepad.onButtonDownObservable.add((button, state)=>{
-          this.keyDown("XB-" + Xbox360Button[button])
+          this.keyDown(`${id}_XB_${Xbox360Button[button]}`)
         })
         gamepad.onButtonUpObservable.add((button, state)=>{
-          this.keyUp("XB-" + Xbox360Button[button])
+          this.keyUp(`${id}_XB_${Xbox360Button[button]}`)
         })
-
-
-        gamepad.rightTrigger
       } 
       else if (gamepad instanceof DualShockPad) {
         //Dual shock button down/up events
         gamepad.onButtonDownObservable.add((button, state)=>{
-          this.keyDown("DS-" + DualShockButton[button])
+          this.keyDown(`${id}_DS_${Xbox360Button[button]}`)
         })
         gamepad.onButtonUpObservable.add((button, state)=>{
-          this.keyUp("DS-" + DualShockButton[button])
+          this.keyUp(`${id}_DS_${Xbox360Button[button]}`)
         })
       }
       else if (gamepad instanceof GenericPad) {
         gamepad.onButtonDownObservable.add((button, state)=>{
-          this.keyDown("GP-" + button)
+          this.keyDown(`${id}_GP_${Xbox360Button[button]}`)
         })
         gamepad.onButtonUpObservable.add((button, state)=>{
-          this.keyUp("GP-" + button)
+          this.keyUp(`${id}_GP_${Xbox360Button[button]}`)
         })
       } 
-
     })
 
     gpm.onGamepadDisconnectedObservable.add((gp, state)=>{
@@ -194,8 +192,11 @@ export class InputManager implements IInputManager {
       })
     }
   }
-  registerAxis(axis:Array<IAxisBase>) {
+
+
+  registerHardwareAxis(axis:Array<HardwareAxis>):Array<HardwareAxis>{
     axis.forEach(a=>{this.axisMap.set(a.name, a)})
+    return axis
   }
 
   bind(key:string, commandName:string):void{
@@ -239,9 +240,7 @@ export class InputManager implements IInputManager {
     if (!this.commandMap.has(spec.name)){
       const command = new InputCommand(spec)
       this.commandMap.set(command.name, command)
-      
       this.getSavedKeys(command.name)
-
       command.getDefaultControls().forEach(code=>{ this.bind(code, command.name)})
       return command
     }
