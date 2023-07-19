@@ -71,7 +71,6 @@ export class Game implements IGame{
     HavokPhysics().then((havok) => {
       this.scene.enablePhysics(new Vector3(0,-9.81, 0), new HavokPlugin(true, havok));
       const groundAggrergate = new PhysicsAggregate(this.ground, PhysicsShapeType.BOX, { mass:0}, this.scene)
-
     });
 
     
@@ -81,10 +80,10 @@ export class Game implements IGame{
     })
 
 
-    //new Pointer("X", this.scene, Color3.Red(), true ,new Vector3(0,0,0), new Vector3(10,0,0))
-    //new Pointer("Y", this.scene, Color3.Green(), true ,new Vector3(0,0,0), new Vector3(0,10,0))
-    //new Pointer("Z", this.scene, Color3.Blue(), true ,new Vector3(0,0,0), new Vector3(0,0,10))
-    //new Pointer("xyz", this.scene, Color3.Purple(), true ,new Vector3(0,0,0), new Vector3(10,10,10))
+    new Pointer("X", this.scene, Color3.Red(), 1 ,new Vector3(0,0,0), new Vector3(5,0,0))
+    new Pointer("Y", this.scene, Color3.Green(), 1 ,new Vector3(5,0,0), new Vector3(0,5,0))
+    new Pointer("Z", this.scene, Color3.Blue(), 1 ,new Vector3(5,5,0), new Vector3(0,0,5))
+    new Pointer("xyz", this.scene, Color3.Purple(), 1 ,new Vector3(0,0,0), new Vector3(5,5,5))
     this.scene.debugLayer.show();
 
 

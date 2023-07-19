@@ -46,7 +46,7 @@ export class Pointer{
   setLine(line:Vector3){
     this.transformNode.lookAt(line.add(this.transformNode.position))
     if (this.scale > 0){
-      const scale = line.length() / this.scale
+      const scale = line.length() / (this.scale * 10)
       this.transformNode.scaling = new Vector3(scale, scale, scale)
     }
   }
